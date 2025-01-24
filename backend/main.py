@@ -1,10 +1,9 @@
 from fastapi import FastAPI, Depends
 from sqlalchemy.orm import Session
 import models
+from schemas import MessageCreate, MessageResponse
 from crud import create_message, get_all_messages
 from database import SessionLocal, engine
-from pydantic import BaseModel
-from datetime import datetime
 
 # Create tables
 models.Base.metadata.create_all(bind=engine)
@@ -18,19 +17,6 @@ def get_db():
         yield db
     finally:
         db.close()
-
-class MessageCreate(BaseModel):
-    user_message: str
-
-class MessageResponse(BaseModel):
-    id: int
-    user_message: str
-    bot_response: str
-    timestamp: datetime
-
-    class Config:
-        orm_mode = True
-
 
 @app.post("/messages/", response_model=MessageResponse)
 def send_message(message: MessageCreate, db: Session = Depends(get_db)):
