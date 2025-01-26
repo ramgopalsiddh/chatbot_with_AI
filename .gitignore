@@ -58,3 +58,4 @@ __pycache__/
 
 # backend/*.db
 
+backend/*.env
