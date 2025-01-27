@@ -55,18 +55,18 @@ def get_messages(db: Session = Depends(get_db)):
 
 # WebSocket endpoint for real-time communication
 @app.websocket("/ws/messages/")
-async def websocket_endpoint(websocket: WebSocket):
-    await websocket.accept()  # Accept the WebSocket connection
+async def websocket_endpoint(websocket: WebSocket, db: Session = Depends(get_db)):
+    await websocket.accept()
     
     while True:
         try:
-            # Receive user message from WebSocket
             user_message = await websocket.receive_text()
-            
-            # Get OpenAI response
             bot_response = get_openai_response(user_message)
             
-            # Send bot response back to the WebSocket client
+            # Save user message and bot response in the database
+            create_message(db, user_message, bot_response)
+            
+            # Send bot response back to the client
             await websocket.send_text(bot_response)
         
         except WebSocketDisconnect:
