@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Depends
+from fastapi import FastAPI, Depends, WebSocket, WebSocketDisconnect
 from sqlalchemy.orm import Session
 import openai
 import models
@@ -8,7 +8,7 @@ from database import SessionLocal, engine
 from dotenv import load_dotenv
 import os
 
-# Set OpenAI API Key
+# Load environment variables and set OpenAI API key
 load_dotenv()
 openai.api_key = os.getenv("OPENAI_API_KEY")
 
@@ -52,3 +52,23 @@ def send_message(message: MessageCreate, db: Session = Depends(get_db)):
 @app.get("/messages/")
 def get_messages(db: Session = Depends(get_db)):
     return get_all_messages(db)
+
+# WebSocket endpoint for real-time communication
+@app.websocket("/ws/messages/")
+async def websocket_endpoint(websocket: WebSocket):
+    await websocket.accept()  # Accept the WebSocket connection
+    
+    while True:
+        try:
+            # Receive user message from WebSocket
+            user_message = await websocket.receive_text()
+            
+            # Get OpenAI response
+            bot_response = get_openai_response(user_message)
+            
+            # Send bot response back to the WebSocket client
+            await websocket.send_text(bot_response)
+        
+        except WebSocketDisconnect:
+            print("Client disconnected")
+            break
